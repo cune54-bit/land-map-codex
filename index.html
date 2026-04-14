@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>대지정보 지도 조회</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=SUIT:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+    <script
+      type="text/javascript"
+      src="https://map.vworld.kr/js/vworldMapInit.js.do?version=2.0&apiKey=4E0AD412-BC5D-3976-8220-FD7C550431CE"
+    ></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="info-panel">
+        <div class="panel-header">
+          <p class="eyebrow">LAND SNAPSHOT</p>
+          <h1>대지정보 지도 조회</h1>
+          <p class="panel-copy">
+            지도를 클릭하면 선택한 필지의 대지면적, 지목, 용도지역, 소유구분을
+            확인할 수 있습니다.
+          </p>
+        </div>
+
+        <div id="status" class="status-card is-idle">
+          지도를 클릭해 조회를 시작하세요.
+        </div>
+
+        <section class="card">
+          <div class="card-label">선택 필지</div>
+          <div id="landAddress" class="card-value">아직 선택되지 않음</div>
+          <div id="pnu" class="card-meta">PNU -</div>
+        </section>
+
+        <section class="data-grid">
+          <article class="data-card">
+            <span class="data-title">대지면적</span>
+            <strong id="landArea">-</strong>
+          </article>
+          <article class="data-card">
+            <span class="data-title">지목</span>
+            <strong id="landCategory">-</strong>
+          </article>
+          <article class="data-card">
+            <span class="data-title">용도지역</span>
+            <strong id="landUse">-</strong>
+          </article>
+          <article class="data-card">
+            <span class="data-title">소유구분</span>
+            <strong id="ownerType">-</strong>
+          </article>
+        </section>
+
+        <section class="card">
+          <div class="card-label">좌표</div>
+          <div id="coords" class="card-value">-</div>
+          <div class="card-footnote">
+            클릭 지점 기준으로 가장 가까운 필지를 조회합니다.
+          </div>
+        </section>
+
+        <section class="card notes">
+          <div class="card-label">안내</div>
+          <ul>
+            <li>지도: 브이월드 2D API 2.0</li>
+            <li>필지/토지특성: 브이월드 Data/NED API</li>
+            <li>소유구분은 공개 범위와 인증 상태에 따라 비어 있을 수 있습니다.</li>
+          </ul>
+        </section>
+      </aside>
+
+      <main class="map-panel">
+        <div class="map-header">
+          <div>
+            <p class="map-label">INTERACTIVE MAP</p>
+            <h2>필지를 클릭해서 대지정보 보기</h2>
+          </div>
+          <div class="chip">VWorld</div>
+        </div>
+        <div id="map" class="map-frame" aria-label="대지정보 지도"></div>
+      </main>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>
