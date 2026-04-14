@@ -1,4 +1,6 @@
 const VWORLD_KEY = "4E0AD412-BC5D-3976-8220-FD7C550431CE";
+const DATA_GO_KR_KEY =
+  "262UaaKgpdsminV6qlnLGdOq7KpFfEfTPk9jPZwt422PFHtMoAKfWyF3k3DFQWNUpVmdLpZw4ESve6h7hkw4uA==";
 
 const elements = {
   status: document.getElementById("status"),
@@ -8,6 +10,7 @@ const elements = {
   landCategory: document.getElementById("landCategory"),
   landUse: document.getElementById("landUse"),
   ownerType: document.getElementById("ownerType"),
+  completionYear: document.getElementById("completionYear"),
   coords: document.getElementById("coords"),
 };
 
@@ -95,13 +98,23 @@ function formatCoords(coord4326) {
   return `${lon.toFixed(6)}, ${lat.toFixed(6)}`;
 }
 
-function updateInfoPanel({ address, pnu, area, category, landUse, ownerType, coords }) {
+function updateInfoPanel({
+  address,
+  pnu,
+  area,
+  category,
+  landUse,
+  ownerType,
+  completionYear,
+  coords,
+}) {
   elements.landAddress.textContent = address || "주소 정보 없음";
   elements.pnu.textContent = `PNU ${pnu || "-"}`;
   elements.landArea.textContent = area || "-";
   elements.landCategory.textContent = category || "-";
   elements.landUse.textContent = landUse || "-";
   elements.ownerType.textContent = ownerType || "-";
+  elements.completionYear.textContent = completionYear || "-";
   elements.coords.textContent = coords || "-";
 }
 
@@ -114,6 +127,7 @@ function clearSelection() {
     category: "-",
     landUse: "-",
     ownerType: "-",
+    completionYear: "-",
     coords: "-",
   });
 }
@@ -193,6 +207,70 @@ async function fetchOwnerInfo(pnu) {
   return extractRows(payload);
 }
 
+function parsePnu(pnu) {
+  if (!pnu || String(pnu).length < 19) {
+    return null;
+  }
+
+  const normalized = String(pnu);
+
+  return {
+    sigunguCd: normalized.slice(0, 5),
+    bjdongCd: normalized.slice(5, 10),
+    platGbCd: normalized.slice(10, 11) === "2" ? "1" : "0",
+    bun: normalized.slice(11, 15),
+    ji: normalized.slice(15, 19),
+  };
+}
+
+function extractItems(payload) {
+  const items = payload?.response?.body?.items?.item;
+
+  if (Array.isArray(items)) {
+    return items;
+  }
+
+  if (items) {
+    return [items];
+  }
+
+  return [];
+}
+
+async function fetchBuildingCompletionYear(pnu) {
+  const parsed = parsePnu(pnu);
+
+  if (!parsed) {
+    return null;
+  }
+
+  const url =
+    "https://apis.data.go.kr/1613000/BldRgstHubService/getBrTitleInfo" +
+    `?serviceKey=${encodeURIComponent(DATA_GO_KR_KEY)}` +
+    `&sigunguCd=${parsed.sigunguCd}` +
+    `&bjdongCd=${parsed.bjdongCd}` +
+    `&platGbCd=${parsed.platGbCd}` +
+    `&bun=${parsed.bun}` +
+    `&ji=${parsed.ji}` +
+    "&numOfRows=20&pageNo=1&_type=json";
+
+  const payload = await requestJson(url);
+  const items = extractItems(payload);
+
+  if (!items.length) {
+    return null;
+  }
+
+  const firstCompleted = items.find((item) => item.useAprDay);
+  const useAprDay = firstCompleted?.useAprDay || items[0]?.useAprDay;
+
+  if (!useAprDay) {
+    return "건축물 정보 없음";
+  }
+
+  return `${String(useAprDay).slice(0, 4)}년`;
+}
+
 function summarizeOwnerType(rows) {
   if (!rows.length) {
     return "공개 정보 없음";
@@ -258,9 +336,12 @@ async function handleMapClick(event) {
 
     const properties = parcelFeature.properties || {};
     const pnu = properties.pnu || properties.PNU;
-    const [landCharacteristics, ownerRows] = await Promise.all([
+    const [landCharacteristics, ownerRows, completionYear] = await Promise.all([
       pnu ? fetchLandCharacteristics(pnu).catch(() => null) : Promise.resolve(null),
       pnu ? fetchOwnerInfo(pnu).catch(() => []) : Promise.resolve([]),
+      pnu
+        ? fetchBuildingCompletionYear(pnu).catch(() => "조회 불가")
+        : Promise.resolve("건축물 정보 없음"),
     ]);
 
     state.vectorSource.clear();
@@ -292,6 +373,7 @@ async function handleMapClick(event) {
       category: landCategory,
       landUse,
       ownerType: summarizeOwnerType(ownerRows),
+      completionYear,
       coords: formatCoords(coord4326),
     });
 
